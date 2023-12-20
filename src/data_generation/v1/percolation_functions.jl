@@ -47,37 +47,70 @@ function fill_new_points!(new_points::Set, filled::BitMatrix)
     end
 end
 
-function run_percolation(inputs::Dict)
-    # metrix to track
-    max_distance2 = 0
-    max_projected_distance = zeros(length(inputs["directions"]))
+# function run_percolation(inputs::Dict)
+#     # metrix to track
+#     max_distance2 = 0
+#     max_projected_distance = zeros(length(inputs["directions"]))
 
-    blocked, filled = generate_geometry(inputs["widths"], inputs["porosity"])
-    points = inputs["initial conditions"]
+#     blocked, filled = generate_geometry(inputs["widths"], inputs["porosity"])
+#     points = inputs["initial conditions"]
+#     fill_new_points!(points, filled)
+#     while true
+#         points = propagate(points, blocked, filled, inputs["directions"])
+#         if isempty(points)
+#             break
+#         end
+#         # compute metrics
+#         for p in points
+#             for init_p in inputs["initial conditions"]
+#                 for (i, direction) in enumerate(inputs["directions"])
+#                     dist = ((p - init_p)'direction)/sqrt(sum(direction.^2))
+#                     if dist > max_projected_distance[i] 
+#                         max_projected_distance[i] = dist
+#                     end
+#                 end
+#                 dist = sum((p - init_p).^2)
+#                 if dist > max_distance2
+#                     max_distance2 = dist
+#                 end
+#             end
+#         end
+#         fill_new_points!(points, filled)
+#     end
+#     return blocked, filled, sqrt(max_distance2), max_projected_distance
+# end
+function compute_percolation_probability(inputs::Dict)
+    blocked, _ = generate_geometry(inputs["widths"], inputs["porosity"])
+    initial_conditions = Set()
+    for i = 1:size(blocked, 1)
+        if blocked[i,1] == 0
+            push!(initial_conditions, [i,1])
+        end
+    end
+    filled = run_percolation(inputs["directions"], initial_conditions, blocked)
+
+    new_initial_conditions = Set()
+    for i = 1:size(filled, 1)
+        if filled[i, end] == 1
+            push!(new_initial_conditions, [i,size(filled, 2)])
+        end
+    end
+    filled = run_percolation(inputs["directions"], new_initial_conditions, blocked)
+    return blocked, sum(filled)/sum(1 .- blocked)
+end
+
+function run_percolation(directions, initial_conditions, blocked)
+    filled = BitArray(zeros(Int, size(blocked)))
+    points = initial_conditions
     fill_new_points!(points, filled)
     while true
-        points = propagate(points, blocked, filled, inputs["directions"])
+        points = propagate(points, blocked, filled, directions)
         if isempty(points)
             break
         end
-        # compute metrics
-        for p in points
-            for init_p in inputs["initial conditions"]
-                for (i, direction) in enumerate(inputs["directions"])
-                    dist = ((p - init_p)'direction)/sqrt(sum(direction.^2))
-                    if dist > max_projected_distance[i] 
-                        max_projected_distance[i] = dist
-                    end
-                end
-                dist = sum((p - init_p).^2)
-                if dist > max_distance2
-                    max_distance2 = dist
-                end
-            end
-        end
         fill_new_points!(points, filled)
     end
-    return blocked, filled, sqrt(max_distance2), max_projected_distance
+    return filled
 end
 
 function generate_geometry(widths, porosity)
