@@ -9,8 +9,7 @@ function main(input)
         input["porosity"] = p
         blocked, percolation_probability = compute_percolation_probability(input)
         path = "C:\\Users\\jonat\\OneDrive\\Documents\\programming\\AnacondaProjects\\PHYS495\\final\\data\\perco_prob\\"
-        data = permutedims(repeat(blocked*1.0, inner=[1,1,3]),[3,1,2])
-        image = colorview(RGB, data)
+        image = colorview(Gray, blocked)
         save(string(path,round(1-p;digits=3),"_", percolation_probability,".png"), image)
     end
 end
