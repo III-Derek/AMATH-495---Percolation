@@ -91,5 +91,3 @@ function labeled_matrix = hoshen_kopelman(matrix)
         end
     end
 end
-
-
