@@ -1,3 +1,5 @@
+# none of these functions are used in the final script
+
 function run_parallel(func, args, iterations)
     x = Vector{Any}(undef, iterations)
     @sync begin

@@ -1,4 +1,4 @@
-
+# these metrics are not used in the final script
 """
 Computes fraction of blocks filled to the amount of blocks that can be filled
 (ignoring the whether the directions are possible)

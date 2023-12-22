@@ -2,6 +2,9 @@ function target_filled(point, blocked, filled)
     return blocked[point...] || filled[point...]
 end
 
+"""
+Checks whether new point is in a grid
+"""
 function within_grid(point, grid)
     grid_size = size(grid)
     for dim in eachindex(point)
@@ -13,6 +16,9 @@ function within_grid(point, grid)
     return true
 end
 
+"""
+Gets list of new points around given point.
+"""
 function get_new_points(point, directions)
     new_points = Set()
     for direction in directions
@@ -79,40 +85,62 @@ end
 #     end
 #     return blocked, filled, sqrt(max_distance2), max_projected_distance
 # end
+"""
+Generates a random array of 0s and 1s and runs percolation on it to see what elements are filled, propogating from initial conditions
+of all empty cells on the left side. Then we measure which of these reach the right side. Then we start with the points reached on the
+right side and run percolation on that. This gives a large cluster. Dividing the size of this cluster by the number of non-blocked elements
+gives the percolation probability
+
+"""
 function compute_percolation_probability(inputs::Dict)
+    # generate random arary
     blocked, _ = generate_geometry(inputs["widths"], inputs["porosity"])
+    # get initial conditions on all empty cells on the left side
     initial_conditions = Set()
     for i = 1:size(blocked, 1)
         if blocked[i,1] == 0
             push!(initial_conditions, [i,1])
         end
     end
+    # run percolation for these initial conditions
     filled = run_percolation(inputs["directions"], initial_conditions, blocked)
 
+    # get initial conditions from all cells on the right side that were filled from the percolation
     new_initial_conditions = Set()
     for i = 1:size(filled, 1)
         if filled[i, end] == 1
             push!(new_initial_conditions, [i,size(filled, 2)])
         end
     end
+    # run percolation on the right side initial conditions
     filled = run_percolation(inputs["directions"], new_initial_conditions, blocked)
+    # compute percolation probability
     return blocked, sum(filled)/sum(1 .- blocked)
 end
 
+"""
+The percolation simulation. Given some initial conditions, fill out the neighbours until you can't
+"""
 function run_percolation(directions, initial_conditions, blocked)
+    # initialize array of zeros to keep track of filled elements
     filled = BitArray(zeros(Int, size(blocked)))
     points = initial_conditions
-    fill_new_points!(points, filled)
+    fill_new_points!(points, filled) # put intial conditions on filled array
     while true
+        # propogate to empty cells until you can't
         points = propagate(points, blocked, filled, directions)
         if isempty(points)
             break
         end
+        # put new points in the filled matrix
         fill_new_points!(points, filled)
     end
     return filled
 end
 
+"""
+Creates empty arrays
+"""
 function generate_geometry(widths, porosity)
     blocked = rand(Uniform(0,1), widths) .< porosity
     filled = BitArray(zeros(widths))
